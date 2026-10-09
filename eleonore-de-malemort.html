@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L'Esprit d'Éléonore de Malemort – Dossier d'organisation</title>
+<style>
+:root{--bg:#120d16;--card:#1d1524;--tx:#eadfd0;--mut:#a99bb0;--ac:#e8742c;--ac2:#b78cff;--bd:#3a2a45}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.6 Georgia,serif}
+header{padding:60px 20px;text-align:center;background:radial-gradient(circle at 50% 0,#3a1f4a,#120d16 70%)}
+h1{font-size:clamp(2rem,6vw,3.6rem);margin:0;color:var(--ac)}h2{color:var(--ac);border-bottom:1px solid var(--bd);padding-bottom:6px;margin-top:48px}h3{margin:0 0 6px;color:var(--ac2)}
+main{max-width:1050px;margin:auto;padding:0 18px 60px}.sub{color:var(--mut);font-style:italic}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px;margin:16px 0}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font:12px sans-serif;margin:0 6px 6px 0;background:#2d2038;border:1px solid var(--bd)}
+.tag.a{background:var(--ac);color:#000}.tag.n{background:#244}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+table{width:100%;border-collapse:collapse;font:14px sans-serif;display:block;overflow-x:auto}td,th{border:1px solid var(--bd);padding:6px 9px;text-align:left}th{background:#2d2038}
+ul{padding-left:20px}code,pre{font-family:monospace;background:#0c0810;border-radius:6px;padding:2px 5px;font-size:13px}pre{padding:12px;overflow-x:auto}
+nav{position:sticky;top:0;background:#120d16ee;padding:8px;text-align:center;font:14px sans-serif;z-index:5}nav a{color:var(--ac2);margin:0 8px;text-decoration:none}
+.q li{margin:6px 0}.k{font:13px sans-serif;color:var(--mut)}
+</style></head><body>
+<header><div class="k">SOIRÉE HALLOWEEN · J-20</div><h1>👻 L'Esprit d'Éléonore de Malemort</h1>
+<p class="sub">Les invités sont prisonniers de l'esprit d'une petite fille… Chaque pièce est un souvenir, chaque souvenir une épreuve.</p></header>
+<nav><a href="#concept">Concept</a><a href="#epreuves">Épreuves</a><a href="#tech">Technique</a><a href="#acteurs">Acteurs</a><a href="#heures">Heures/homme</a><a href="#planning">Planning</a><a href="#questions">Questions</a></nav>
+<main>
+<h2 id="concept">1. Concept & déroulé</h2>
+<div class="card"><p><b>Histoire :</b> Éléonore de Malemort est morte trop jeune. Son esprit, resté dans la maison, garde ses jouets, ses peurs et ses souvenirs. Les équipes de 3-4 joueurs ont été « avalées » dans sa mémoire. Pour s'échapper, elles doivent traverser ses souvenirs (cirque, maison de poupée, confiserie de Hansel & Gretel…) et récolter des <b>fragments de mémoire</b> (points). L'équipe avec le plus de fragments à minuit libère l'esprit… ou le rejoint.</p>
+<ul><li><b>Principe (type Prison Island) :</b> chaque équipe a un bracelet/badge RFID. On badge à l'entrée d'une salle → l'épreuve démarre → le score est envoyé au serveur.</li>
+<li><b>Rejouable à l'infini</b> : seul le <b>meilleur score par salle</b> compte. Total = somme des meilleurs scores.</li>
+<li><b>Normalisation :</b> chaque salle donne de 0 à 100 points (équilibre entre épreuves). Bonus possible : +10 pour la 1ʳᵉ équipe à avoir fait toutes les salles.</li>
+<li><b>Catégories :</b> Mémoire, Adresse, Force, Précision, Logique, Réflexion, Réflexes → classement par catégorie en plus du classement général (« Meilleure équipe de force », etc.).</li>
+<li><b>Fil rouge narratif :</b> voix de la petite fille (enceinte Bluetooth/ESP32 + DFPlayer) qui commente les scores, comptines déformées, lumières qui vacillent à chaque nouveau record.</li>
+<li><b>Gestion de flux :</b> 1 équipe par salle à la fois, file d'attente indiquée par une LED rouge/verte à la porte (« Éléonore est occupée »). Durée d'une tentative : 2-4 min.</li></ul></div>
+
+<h2 id="epreuves">2. Les 7 épreuves</h2>
+<div id="rooms"></div>
+<div class="card"><h3>🏠 Pièces bonus (sans épreuve)</h3><p><b>Entrée / accueil :</b> remise des badges, enrôlement des équipes (nom d'équipe, couleur), briefing. <b>Zone score :</b> TV avec classement live (Angular) dans le couloir ou le salon (coin). Si vous avez un recoin libre : « chambre des parents interdite » = zone de repos / buvette avec un jeu secret (bonus).</p></div>
+
+<h2 id="tech">3. Architecture technique</h2>
+<div class="grid">
+<div class="card"><h3>Matériel commun</h3><ul>
+<li>1 routeur WiFi dédié (SSID caché, pas d'Internet nécessaire) – ~30 €</li>
+<li>1 PC/Raspberry Pi 4-5 serveur (NestJS + base) – Pi ~70 €</li>
+<li>8 ESP32 DevKit (7 salles + accueil) + 3 de rechange – ~8 €/u</li>
+<li>8 lecteurs RFID <b>RC522</b> (13,56 MHz) + 1 en réserve – ~3 €/u</li>
+<li>30 badges/bracelets MIFARE (10 équipes + marge) – ~0,8 €/u</li>
+<li>Alimentations 5 V 3 A + rallonges, multiprises, câbles Dupont, borniers</li>
+<li>LED RGB (anneau ou bande WS2812B) à chaque porte : rouge occupé / vert libre / bleu en cours</li>
+<li>1 TV + HDMI (tableau des scores) ; 1 tablette pour l'admin</li></ul></div>
+<div class="card"><h3>Stack logicielle</h3><ul>
+<li><b>NestJS</b> : API REST + WebSocket (Socket.IO) pour le live. TypeORM + SQLite/PostgreSQL.</li>
+<li><b>Angular</b> : (1) tableau des scores plein écran (animé), (2) admin tablette (équipes, badges, correction de score, reset salle, état des ESP32), (3) page mobile publique optionnelle.</li>
+<li><b>ESP32</b> (Arduino/PlatformIO) : lib commune <code>RoomClient</code> (WiFi, HTTP, reconnexion, lecture badge, LED statut) + un fichier de jeu par salle. Alternative robuste : MQTT (Mosquitto sur le serveur).</li>
+<li>Mode <b>dégradé hors ligne</b> : l'ESP32 stocke le score en mémoire et renvoie à la reconnexion.</li></ul></div></div>
+<div class="card"><h3>Flux d'une épreuve</h3><pre>1. Équipe badge  → ESP32 lit l'UID (RC522)
+2. ESP32 → POST /rooms/:id/attempts/start {uid}
+3. NestJS vérifie : équipe connue ? salle libre ? → {ok, team, bestScore}
+4. Le jeu tourne (LED bleue, sons)
+5. Fin → POST /rooms/:id/attempts/finish {attemptId, rawScore, details}
+6. NestJS convertit en points 0-100, garde max(équipe, salle)
+7. WebSocket → Angular : classement mis à jour, animation « +12 pts »</pre>
+<p><b>Modèle de données :</b> <code>Team(id,name,color,badgeUid)</code> · <code>Room(id,name,category,maxRaw,formula)</code> · <code>Attempt(id,teamId,roomId,raw,points,startedAt,finishedAt)</code> · <code>BestScore</code> (vue). <b>Endpoints :</b> <code>/teams</code>, <code>/rooms</code>, <code>/attempts/start|finish</code>, <code>/scoreboard</code>, <code>/admin/override</code>, <code>/devices/heartbeat</code>.</p>
+<p><b>Sécurité/fiabilité :</b> clé d'API par ESP32, cooldown de 5 s anti-double-badge, bouton « abandon » physique, bouton admin « forcer fin », heartbeat toutes les 10 s (Angular admin affiche les salles hors ligne), sauvegarde DB toutes les 5 min.</p></div>
+
+<h2 id="acteurs">4. Acteurs & technicien</h2>
+<div class="grid">
+<div class="card"><h3>🎪 Acteur 1 – Le Forain / Monsieur Loyal</h3><p>Barnum + Salon. Tient le stand de force, harangue la foule, annonce les scores. Costume : redingote, moustache, haut-de-forme.</p></div>
+<div class="card"><h3>🤡 Acteur 2 – Le Clown triste</h3><p>Salon (funambule) puis rôde dans le barnum de tir. Mime, ballons, rire d'enfant déformé.</p></div>
+<div class="card"><h3>👧 Acteur 3 – Éléonore / la Poupée</h3><p>Chambre, SdB (apparition miroir) et couloirs. Robe blanche, voix chuchotée, jamais de contact. Déclenche les jump-scares (synchronisés par ESP32 si voulu).</p></div>
+<div class="card"><h3>🔧 Technicien volant</h3><p>Valise : ESP32/RC522/câbles de rechange, piles, ruban, multimètre, talkie-walkie. Passe toutes les 15 min, dépanne, remet à zéro les salles (bonbons, balles, poupées), donne les indices du bureau.</p></div></div>
+
+<h2 id="heures">5. Estimation heures/homme</h2>
+<div class="card"><p class="k">Électronique+code = câblage, firmware, tests. Construction = bois, supports, boîtiers. Déco min = minimaliste (tissus, lumières, affiches) ; max = immersive (accessoires, peinture, fumée, son).</p>
+<table id="htable"></table></div>
+
+<h2 id="planning">6. Planning conseillé (20 jours)</h2>
+<div class="card"><table>
+<tr><th>Jours</th><th>Objectif</th></tr>
+<tr><td>J-20 → J-18</td><td>Valider concept, répartir les salles, commander le matériel (délais Aliexpress ≈ 2-3 semaines → <b>privilégier Amazon / électronique FR</b>)</td></tr>
+<tr><td>J-18 → J-14</td><td>API NestJS + lib ESP32 commune + prototype 1 salle bout-en-bout (badge → score → TV)</td></tr>
+<tr><td>J-14 → J-8</td><td>Firmware de chaque salle, constructions bois, scoreboard Angular</td></tr>
+<tr><td>J-8 → J-4</td><td>Décoration, sons/lumières, intégration complète</td></tr>
+<tr><td>J-4 → J-2</td><td>Répétition générale avec « équipes test » + équilibrage des barèmes</td></tr>
+<tr><td>J-1</td><td>Installation finale, test réseau, sauvegarde, brief acteurs</td></tr>
+<tr><td>Jour J</td><td>Technicien en roulement, admin tablette, plan B papier (feuille de scores)</td></tr></table>
+<p><b>Priorité si on manque de temps :</b> cœur (API + scoreboard + badges) → Cuisine, Barnum force, Bureau (les plus simples) → Chambre (la plus complexe) en dernier.</p>
+<p><b>Plan B :</b> si l'électronique d'une salle plante, l'acteur ou le technicien note le score à la main et l'admin le saisit dans Angular.</p></div>
+
+<h2 id="questions">7. Questions pour affiner</h2>
+<div class="card"><ol class="q">
+<li>Combien d'invités au total (→ nombre d'équipes) et quel âge moyen ? Y a-t-il des enfants ?</li>
+<li>Durée totale du jeu ? (ex. 21h-0h30) Rotation libre ou imposée ?</li>
+<li>Surface réelle des pièces ? La salle de bain peut-elle être noire/occultée ? Y a-t-il du WiFi/prises dans chaque pièce et dans le barnum ?</li>
+<li>Barnum : étanche, sol plat, chauffé ? Risque de pluie/humidité pour l'électronique ?</li>
+<li>Budget global (déco + électronique) ?</li>
+<li>Combien de personnes aident vraiment, et avec quelles compétences (bois, couture, électronique) ?</li>
+<li>Avez-vous déjà : bandes LED, servos, boutons arcade, capteurs, imprimante 3D, découpeuse laser ?</li>
+<li>Niveau de peur souhaité : fun/familial, ou vrai frisson ? Jump-scares OK ? Épileptiques (stroboscopes) ?</li>
+<li>Alcool et jeux de force/adresse : fait-on des épreuves « sans risque » après minuit ?</li>
+<li>Prévoit-on un costume imposé pour les invités et un lancement théâtral (acteur qui lit une lettre) ?</li>
+<li>Préférez-vous MQTT ou HTTP simple pour les ESP32 ? Qui code l'Angular et qui fait l'Arduino ?</li>
+<li>Voulez-vous une page publique mobile pour suivre le classement ?</li></ol></div>
+
+<h2>8. Liste d'achats consolidée (estimation)</h2>
+<div class="card"><table id="buy"></table></div>
+</main>
+<script>
+const R=[
+{n:1,room:"Cuisine",theme:"🍬 La Maison en pain d'épice (Hansel & Gretel)",nom:"Le Festin d'Éléonore",cat:["Mémoire"],act:false,
+desc:"Quatre énormes bonbons lumineux (rouge, vert, jaune, bleu) sur la table : sucette, macaron, guimauve, bonbon-bâton. La sorcière-enceinte joue une séquence de lumières+sons que l'équipe doit reproduire. Chaque tour ajoute une note. À chaque erreur, la sorcière gronde et la partie s'arrête. Mode équipe : chaque joueur appuie à tour de rôle (obligation de se souvenir ensemble).",
+rule:"Départ à 3 notes. Durée max 3 min. Compteur de niveau atteint.",score:"Niveau atteint (max 15) → points = niveau × 100/15.",
+mat:["ESP32","4 boutons arcade lumineux 60 mm (ou boutons + LED 5 V)","Bande WS2812B (60 LED)","Buzzer + ampli PAM8403 + petit HP (ou DFPlayer Mini)","RC522","Alim 5 V 3 A","Boîtier bois en forme de bonbons"],
+elec:"Boutons en INPUT_PULLUP, LED pilotées en PWM, séquence aléatoire stockée en tableau, anti-rebond logiciel 30 ms. Sons générés par tone() ou fichiers MP3 (voix de la sorcière).",
+deco:"Pain d'épice en carton-pâte, glaçage en pâte à modeler/colle chaude blanche, bonbons géants en polystyrène, guirlandes de bonbons, os et cage (clin d'œil sorcière), four éteint avec lueur orange.",h:[8,3,6,14]},
+{n:2,room:"Salon",theme:"🎪 Le Cirque de Malemort",nom:"Le Funambule Maudit",cat:["Adresse","Précision"],act:true,
+desc:"Parcours « fil du funambule » : une boucle métallique doit suivre un fil de cuivre sinueux sans le toucher. Chaque contact déclenche un bruit de cloche + rire de clown et ajoute une pénalité. Le Clown triste (acteur) distrait, souffle des ballons, donne des ordres absurdes (« Souris ! »). En équipe : les 3-4 joueurs se relaient, chacun parcourt un tronçon.",
+rule:"Un relais par joueur (4 tronçons). Chronomètre actif. Max 4 min.",score:"Score = 100 − (temps_s × 0,25) − (erreurs × 3), min 0.",
+mat:["ESP32","Fil de cuivre rigide 2,5 mm (≈ 4 m)","Poignée/boucle métallique + fil souple","Résistance 10 kΩ, borniers","Buzzer + LED rouge","Support bois/tubes PVC","RC522","Cône de lumière (spot LED)"],
+elec:"La boucle est reliée à GND, le fil de cuivre à une entrée avec pull-up : contact = LOW → interruption + anti-rebond 50 ms. Chaque tronçon a un fil-départ et un fil-arrivée (2 pads) pour le chrono.",
+deco:"Rideaux rouge/blanc, guirlande d'ampoules, tapis de piste, affiches de cirque vintage, ballons noirs, tente tissu au plafond, boule à facettes lente.",h:[6,4,6,16]},
+{n:3,room:"Barnum A",theme:"🎡 La Fête foraine hantée",nom:"La Cloche du Fort",cat:["Force"],act:true,
+desc:"Le classique marteau de fête foraine : on frappe une plaque avec un maillet, une colonne de LED monte et sonne la cloche si le score est haut. Le Forain (acteur) chauffe la foule, parie, fait monter la pression. Chaque joueur frappe 2 fois ; on garde le total de l'équipe.",
+rule:"2 frappes par joueur, 30 s de pause. Maillet mousse dense (sécurité).",score:"Somme des 8 frappes normalisée sur la meilleure valeur de calibrage → 0-100.",
+mat:["ESP32","Capteur de force ou 2-3 piézos + préampli, ou accéléromètre MPU6050 sur la plaque","HX711 + cellule de charge 50 kg (option précise)","Bande WS2812B 144 LED (≥ 2 m)","Cloche + servo/électro-aimant (option)","Maillet mousse dense","RC522","Plaque contreplaqué 18 mm + ressort"],
+elec:"Lecture du pic de signal sur 200 ms (peak-hold), calibration manuelle par le technicien (bouton « tare »), animation LED proportionnelle. La cloche est frappée par un servo si le score dépasse 90.",
+deco:"Bandes rouge/blanc, ampoules, caisse « Lourdaud », affiche de strongman, popcorn, sciure au sol, lanterne forain.",h:[10,6,8,18]},
+{n:4,room:"Barnum B",theme:"🎯 Le Stand de tir aux poupées",nom:"Les Poupées de Chiffon",cat:["Précision","Réflexes"],act:false,
+desc:"Cinq poupées de chiffon dressées sur une étagère s'allument aléatoirement (yeux rouges). Il faut les « faire taire » en les touchant avec une balle de mousse avant qu'elles ne s'éteignent. Les cibles ont une durée de plus en plus courte. 60 secondes, tous les joueurs peuvent lancer (balles partagées).",
+rule:"10 balles de mousse, 60 s. Distance de tir : 3 m (ligne au sol).",score:"Nombre de poupées touchées × 10 + bonus rapidité (< 1 s : +2).",
+mat:["ESP32","5 capteurs piézo (disque 27 mm) ou micro-switch à lamelle","5 paires de LED rouges (yeux)","Résistance 1 MΩ + diode Zener (protection piézo)","MOSFET ou ULN2003 pour les LED","10 balles de mousse","RC522","Cadre bois"],
+elec:"Lecture analogique des piézos, seuil réglable, anti-rebond 150 ms. Algorithme de jeu : cible aléatoire, timer qui diminue de 1,5 s à 0,6 s. Les poupées émettent un « aïe » via DFPlayer en option.",
+deco:"Poupées en chiffon, drap noir en fond, guirlande d'yeux, toile d'araignée, rideau de scène, balles dans un panier de cirque.",h:[8,5,6,14]},
+{n:5,room:"Chambre",theme:"🏠 La Maison de poupée",nom:"Qui dort où ?",cat:["Logique","Réflexion"],act:true,
+desc:"Une grande maison de poupée à 5 pièces et 5 poupées (chacune avec un tag RFID caché dans le pied). Un journal d'indices (« La poupée au ruban rouge ne dort jamais près de la cuisine », etc.) permet de déduire la place de chacune. On pose les poupées : un voyant vert/rouge par pièce valide ou non. Quand toutes sont bonnes, la maison s'illumine. Éléonore (acteur) peut déplacer une poupée dans le dos des joueurs pour piéger.",
+rule:"Énigme de logique à résoudre (grille de zébre). Max 6 min. Indice possible contre −10 pts.",score:"100 − (temps_min × 8) − (erreurs de validation × 2) − (indices × 10).",
+mat:["ESP32","5 lecteurs RC522 (un par pièce, bus SPI partagé + 5 SS)","5 poupées + stickers NFC NTAG213","LED vertes/rouges (10)","Bandes LED d'ambiance (option)","Maison de poupée géante (ou construite en bois)","Éclairage chaud intérieur","Alim 5 V 3 A"],
+elec:"Chaque RC522 sur son SS GPIO (5,17,16,4,15) ; lecture cyclique 200 ms ; table UID → poupée ; comparaison avec la solution (configurable côté serveur pour changer l'énigme). Si bonne = LED verte, sinon rouge.",
+deco:"Papier peint vintage, lit à baldaquin, rocking-chair qui se balance seul (servo + ficelle), boîte à musique, ours défiguré, voile blanc, lumière bleue.",h:[14,5,8,16]},
+{n:6,room:"Bureau",theme:"📖 Le Journal secret d'Éléonore",nom:"Les Pages Effacées",cat:["Réflexion","Logique"],act:false,
+desc:"Le bureau d'une enfant : cahiers, dessins, lettres. Les joueurs doivent retrouver les 4 chiffres du coffre en combinant : message révélé à la lampe UV, énigme en miroir, puzzle de dessins. Le coffre s'ouvre (électro-aimant) et libère la dernière page. Le technicien peut donner un indice.",
+rule:"Max 8 min. Indices payants (−10 pts chacun, bouton « Aide » qui lance une voix d'indice).",score:"100 − (temps_min × 7) − (indices × 10).",
+mat:["ESP32","Électro-aimant 12 V (ou servo + verrou)","Relais ou MOSFET","Clavier matriciel 4×4 ou 4 molettes à chiffres","Lampe UV 395 nm + marqueur UV","Coffre bois / boîte","Boutons « aide »","RC522"],
+elec:"Le clavier envoie le code à l'ESP32 ; code OK → relais coupe l'aimant → coffre libère. Chrono arrêté par l'ouverture. Possibilité de contacts reed pour détecter l'ouverture.",
+deco:"Bureau ancien, lampe de bureau tamisée, dessins d'enfant inquiétants, poupée sans visage, machine à écrire, bougies LED, craies au tableau.",h:[8,3,6,12]},
+{n:7,room:"Salle de bain",theme:"🪞 Le Miroir et la Baignoire",nom:"Les Carreaux Hantés",cat:["Réflexes","Mémoire"],act:true,
+desc:"Dans le noir, des dalles lumineuses au sol/mur s'allument une à une (jusqu'à 9). Il faut les toucher avant extinction (Simon + Whack-a-mole). Éléonore (acteur) apparaît dans le miroir (effet Pepper's ghost / miroir sans tain) à chaque série pour déstabiliser. Plusieurs joueurs sont nécessaires : un par zone.",
+rule:"3 manches de 30 s, difficulté croissante, un joueur par dalle.",score:"Dalles touchées en temps × 100 / total possible.",
+mat:["ESP32","9 dalles tactiles (plaque + capteur capacitif TTP223 ou boutons)","9 LED bleues/blanches + diffuseurs","Miroir sans tain + LED derrière","Brume (option) / ventilateur","Hauts-parleurs","RC522","Rideau de douche opaque"],
+elec:"Boutons en matrice 3×3 (ou 9 GPIO), LED PWM, séquences aléatoires, vitesses progressives. Effet miroir : deux zones de lumière pilotées par relais pour faire apparaître Éléonore.",
+deco:"Baignoire remplie de poupées, eau sombre (cellophane), carreaux noir/blanc (papier), robinet qui goutte (audio), miroir fissuré, écriture « Éléonore » à la buée.",h:[10,3,5,10]}];
+const $=s=>document.querySelector(s);
+$('#rooms').innerHTML=R.map(r=>`<div class="card" id="r${r.n}"><div class="k">ÉPREUVE ${r.n} · ${r.room.toUpperCase()}</div><h3>${r.theme} — « ${r.nom} »</h3>
+${r.cat.map(c=>`<span class="tag a">${c}</span>`).join('')}<span class="tag ${r.act?'':'n'}">${r.act?'🎭 Acteur nécessaire':'🤖 Autonome (sans acteur)'}</span>
+<p>${r.desc}</p><div class="grid"><div><b>Règles :</b> ${r.rule}<br><b>Score :</b> ${r.score}<br><b>Durée :</b> 2-4 min par tentative</div>
+<div><b>Électronique :</b> ${r.elec}</div></div>
+<p><b>Matériel :</b></p><ul>${r.mat.map(m=>`<li>${m}</li>`).join('')}</ul><p><b>Déco :</b> ${r.deco}</p>
+<p class="k">Heures/homme : électro ${r.h[0]} h · construction ${r.h[1]} h · déco ${r.h[2]}–${r.h[3]} h</p></div>`).join('');
+let t=[0,0,0,0];
+let rows=R.map(r=>{t[0]+=r.h[0];t[1]+=r.h[1];t[2]+=r.h[2];t[3]+=r.h[3];return`<tr><td>${r.room}</td><td>${r.h[0]}</td><td>${r.h[1]}</td><td>${r.h[2]}–${r.h[3]}</td><td>${r.h[0]+r.h[1]+r.h[2]}–${r.h[0]+r.h[1]+r.h[3]}</td></tr>`}).join('');
+const P=[["API NestJS + base",18],["Angular scoreboard + admin",20],["Lib ESP32 commune (WiFi, RFID, LED)",8],["Enrôlement badges / accueil",4],["Réseau, installation, câblage global",8],["Tests, répétition générale, équilibrage",12]];
+const pt=P.reduce((a,b)=>a+b[1],0);
+rows+=P.map(p=>`<tr><td>${p[0]}</td><td>${p[1]}</td><td>–</td><td>–</td><td>${p[1]}</td></tr>`).join('');
+const lo=t[0]+t[1]+t[2]+pt,hi=t[0]+t[1]+t[3]+pt;
+$('#htable').innerHTML=`<tr><th>Poste</th><th>Électro+code</th><th>Construction</th><th>Déco</th><th>Total</th></tr>`+rows+`<tr><th>TOTAL</th><th>${t[0]}</th><th>${t[1]}</th><th>${t[2]}–${t[3]}</th><th>${lo}–${hi} h</th></tr><tr><td colspan=5>Avec 5 personnes sur 20 jours ≈ ${Math.round(lo/5)}–${Math.round(hi/5)} h chacun (≈ ${(lo/5/20).toFixed(1)}–${(hi/5/20).toFixed(1)} h/jour).</td></tr>`;
+$('#buy').innerHTML=`<tr><th>Poste</th><th>Quantité</th><th>≈ Prix</th></tr><tr><td>ESP32 + RC522 + câblage</td><td>11 / 9</td><td>≈ 130 €</td></tr><tr><td>Badges MIFARE/NFC (bracelets)</td><td>30</td><td>≈ 30 €</td></tr><tr><td>LED WS2812B + alimentations</td><td>≈ 10 m</td><td>≈ 90 €</td></tr><tr><td>Boutons arcade, piézos, capteurs, relais</td><td>lot</td><td>≈ 80 €</td></tr><tr><td>Audio (DFPlayer, HP, ampli)</td><td>5</td><td>≈ 50 €</td></tr><tr><td>Bois, visserie, peinture</td><td>lot</td><td>≈ 120 €</td></tr><tr><td>Routeur, Raspberry/PC, TV</td><td>—</td><td>≈ 100 € (si non possédés)</td></tr><tr><td>Déco (tissus, papier peint, accessoires)</td><td>lot</td><td>150-400 €</td></tr><tr><th>Total estimé</th><th></th><th>≈ 750–1000 €</th></tr>`;
+</script></body></html>
